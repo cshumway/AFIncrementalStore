@@ -119,7 +119,11 @@ static NSMutableDictionary *_saveRequestBlockDictionary = nil;
 	BOOL couldNotFindValidCompletionBlock = NO;
 	
 	NSPersistentStoreRequest *tmpPersistentStoreRequest = [inNotification.userInfo objectForKey:AFIncrementalStorePersistentStoreRequestKey];
-	AFHTTPRequestOperation *tmpOperation = [inNotification.userInfo objectForKey:AFIncrementalStoreRequestOperationKey];
+    NSArray *tmpOperations = [inNotification.userInfo objectForKey:AFIncrementalStoreRequestOperationsKey];
+    if ([tmpOperations count] > 1) {
+        NSLog(@"More operations than expected (%d)!", [tmpOperations count]);
+    }
+	AFHTTPRequestOperation *tmpOperation = [tmpOperations lastObject];
 	if (tmpPersistentStoreRequest && tmpOperation)
 	{
 		NSString *requestIdentifier = [tmpPersistentStoreRequest af_requestIdentifier];
@@ -133,9 +137,9 @@ static NSMutableDictionary *_saveRequestBlockDictionary = nil;
 				couldNotFindValidCompletionBlock = YES;
 			else
 			{
-				NSArray *tmpFetchedObjects = [inNotification.userInfo objectForKey:AFIncrementalStoreFetchedObjectsKey];
+				NSArray *tmpFetchedObjectIDs = [inNotification.userInfo objectForKey:AFIncrementalStoreFetchedObjectIDsKey];
 				if (tmpFetchCompletionBlock)
-					tmpFetchCompletionBlock((NSFetchRequest *)tmpPersistentStoreRequest, tmpOperation, tmpFetchedObjects);
+					tmpFetchCompletionBlock((NSFetchRequest *)tmpPersistentStoreRequest, tmpOperation, tmpFetchedObjectIDs);
 			}
 		}
 		else
@@ -145,11 +149,12 @@ static NSMutableDictionary *_saveRequestBlockDictionary = nil;
 				couldNotFindValidCompletionBlock = YES;
 			else
 			{
-				NSArray *tmpInsertedObjects =  [inNotification.userInfo objectForKey:AFIncrementalStoreInsertedObjectsKey];
+                NSLog(@"Ignoring objects in save notification...hopefully we don't need this.");
+				/*NSArray *tmpInsertedObjects =  [inNotification.userInfo objectForKey:AFIncrementalStoreInsertedObjectsKey];
 				NSArray *tmpUpdatedObjects = [inNotification.userInfo objectForKey:AFIncrementalStoreUpdatedObjectsKey];
 				NSArray *tmpDeletedObjects = [inNotification.userInfo objectForKey:AFIncrementalStoreDeletedObjectIDsKey];
-				if (tmpSaveCompletionBlock)
-					tmpSaveCompletionBlock((NSSaveChangesRequest *)tmpPersistentStoreRequest, tmpOperation, tmpInsertedObjects, tmpUpdatedObjects, tmpDeletedObjects);
+                tmpSaveCompletionBlock((NSSaveChangesRequest *)tmpPersistentStoreRequest, tmpOperation, tmpInsertedObjects, tmpUpdatedObjects, tmpDeletedObjects);*/
+                tmpSaveCompletionBlock((NSSaveChangesRequest *)tmpPersistentStoreRequest, tmpOperation, nil, nil, nil);
 			}
 		}
 	}
