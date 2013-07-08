@@ -22,6 +22,7 @@
 
 #import "AFIncrementalStore.h"
 #import "AFHTTPClient.h"
+#import "AFFetchSaveManager.h"
 #import <objc/runtime.h>
 
 NSString * const AFIncrementalStoreUnimplementedMethodException = @"com.alamofire.incremental-store.exceptions.unimplemented-method";
@@ -42,6 +43,7 @@ NSString * const AFIncrementalStoreFaultingRelationshipKey = @"AFIncrementalStor
 NSString * const AFIncrementalStorePersistentStoreRequestKey = @"AFIncrementalStorePersistentStoreRequest";
 
 static char kAFResourceIdentifierObjectKey;
+static char kAFRequestIdentifierObjectKey;
 
 static NSString * const kAFIncrementalStoreResourceIdentifierAttributeName = @"__af_resourceIdentifier";
 static NSString * const kAFIncrementalStoreLastModifiedAttributeName = @"__af_lastModified";
@@ -74,6 +76,20 @@ static inline void AFSaveManagedObjectContextOrThrowInternalConsistencyException
         @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:[*error localizedFailureReason] userInfo:[NSDictionary dictionaryWithObject:*error forKey:NSUnderlyingErrorKey]];
     }
 }
+
+@implementation NSPersistentStoreRequest (_AFIncrementalStore)
+
+@dynamic af_requestIdentifier;
+
+- (NSString *)af_requestIdentifier {
+    return (NSString *)objc_getAssociatedObject(self, &kAFRequestIdentifierObjectKey);
+}
+
+- (void)af_setRequestIdentifier:(NSString *)requestIdentifier {
+    objc_setAssociatedObject(self, &kAFRequestIdentifierObjectKey, requestIdentifier, OBJC_ASSOCIATION_COPY_NONATOMIC);
+}
+
+@end
 
 @interface NSManagedObject (_AFIncrementalStore)
 @property (readwrite, nonatomic, copy, setter = af_setResourceIdentifier:) NSString *af_resourceIdentifier;
@@ -689,6 +705,13 @@ withAttributeAndRelationshipValuesFromManagedObject:(NSManagedObject *)managedOb
          withContext:(NSManagedObjectContext *)context
                error:(NSError *__autoreleasing *)error
 {
+    NSString *requestIdentifier = [context.userInfo objectForKey:AFFetchSaveManagerPersistentStoreRequestIdentifierKey];
+    if (requestIdentifier && requestIdentifier.length)
+    {
+        [persistentStoreRequest af_setRequestIdentifier:requestIdentifier];
+        [context.userInfo removeObjectForKey:AFFetchSaveManagerPersistentStoreRequestIdentifierKey];
+    }
+
     if (persistentStoreRequest.requestType == NSFetchRequestType) {
         return [self executeFetchRequest:(NSFetchRequest *)persistentStoreRequest withContext:context error:error];
     } else if (persistentStoreRequest.requestType == NSSaveRequestType) {
