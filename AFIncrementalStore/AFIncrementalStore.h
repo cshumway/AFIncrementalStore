@@ -102,6 +102,12 @@
                     withContext:(NSManagedObjectContext *)context
                           error:(NSError *__autoreleasing *)error;
 
+/**
+  Exposed for SerenityStore implementation.
+ */
+- (NSManagedObjectID *)objectIDForEntity:(NSEntityDescription *)entity
+                  withResourceIdentifier:(NSString *)resourceIdentifier;
+
 @end
 
 #pragma mark -

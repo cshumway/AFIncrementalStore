@@ -445,6 +445,7 @@ withAttributeAndRelationshipValuesFromManagedObject:(NSManagedObject *)managedOb
     NSManagedObjectContext *backingContext = [self backingManagedObjectContext];
 	NSFetchRequest *backingFetchRequest = [fetchRequest copy];
 	backingFetchRequest.entity = [NSEntityDescription entityForName:fetchRequest.entityName inManagedObjectContext:backingContext];
+    backingFetchRequest.affectedStores = nil; //appears to loop if this is specified -cws
 
     switch (fetchRequest.resultType) {
         case NSManagedObjectResultType: {
